@@ -3,7 +3,7 @@ import QtQuick.Controls
 
 import qs.Commons
 import qs.Ui
-import "../My/QuickNote"
+import "file://@@PLUGIN_DIR@@/My/QuickNote"
 
 import Quickshell
 import Quickshell.Wayland
@@ -64,7 +64,7 @@ BarWidget{
                     }
                 }
                 if(nextEmptyIdx !== -1 && !root.activeStickyNote[nextEmptyIdx]){
-                    root.activeStickyNote[nextEmptyIdx] = stickyFactory.createObject(root, { "bufferIndex": nextEmptyIdx })
+                    root.activeStickyNote[nextEmptyIdx] = root.createStickyNote(nextEmptyIdx)
                 }
             }
         }
@@ -158,8 +158,8 @@ BarWidget{
 
             minimumSize: Qt.size(dynamicWidth, dynamicHeight)
             maximumSize: Qt.size(dynamicWidth, dynamicHeight)
-            width: dynamicWidth
-            height: dynamicHeight
+            implicitWidth: dynamicWidth
+            implicitHeight: dynamicHeight
 
             Rectangle {
                 anchors.fill: parent

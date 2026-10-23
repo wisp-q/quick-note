@@ -20,7 +20,7 @@ static int openWalkDir(const QByteArray &path) {
     
     for (int i = 1; i < parts.size(); ++i) {
         if (parts[i].isEmpty()) continue;
-        int nextFd = ::openat(currentFd, parts[i].constData(), O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+        int nextFd = ::openat(currentFd, parts[i].constData(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
         if (nextFd < 0) {
             ::close(currentFd);
             return -1;
@@ -199,6 +199,7 @@ QuickNote::QuickNote(QObject* parent) : QObject(parent), m_currentBufferIndex(0)
 }
 
 QuickNote::~QuickNote(){
+    SaveNote();
     if(m_dirFd >= 0) ::close(m_dirFd);
 }
 
@@ -207,7 +208,7 @@ int QuickNote::BufferIndex() const {return m_currentBufferIndex;}
 void QuickNote::NextBuffer(){
     m_currentBufferIndex = (m_currentBufferIndex + 1) % MAX_BUFFERS;
 
-    emit BufferIndexChanged(m_currentBufferIndex, m_buffers[m_currentBufferIndex]);
+    emit BufferIndexChanged();
 }
 
 void QuickNote::LoadNote(){
@@ -275,7 +276,18 @@ void QuickNote::RunStringInTerminal(const QString &text) const {
         return;
     }
 
-    QByteArray data = text.toUtf8();
+    QByteArray data;
+    if(text.startsWith("#!")){
+        data = text.toUtf8();
+        if(!data.endsWith('\n')) data.append('\n');
+    }
+    else {
+        data = "#!/usr/bin/env bash\n"
+               "trap 'rm -f -- \"$0\"' EXIT\n"
+               "source ~/.bashrc 2>/dev/null || true\n"
+               + text.toUtf8();
+        if(!data.endsWith('\n')) data.append('\n');
+    }
     const char *p = data.constData();
     qint64 left = data.size();
     while(left > 0){
@@ -320,10 +332,10 @@ void QuickNote::RunStringInTerminal(const QString &text) const {
 
     QString cmd;
     if(text.startsWith("#!")){
-        cmd = "\"$1\"; rm -f \"$1\"; exec bash";
+        cmd = "trap 'rm -f -- \"$1\"' EXIT; \"$1\"; exec bash";
     }
     else {
-        cmd = "source ~/.bashrc 2>/dev/null; source \"$1\"; rm -f \"$1\"; exec bash";
+        cmd = "\"$1\"; exec bash";
     }
 
     QProcess::startDetached(
@@ -341,9 +353,40 @@ bool QuickNote::SaveBufferToFile(int index, const QString &path) {
         return false;
     }
 
-    QString cleanPath = path;
+    QString cleanPath = path.trimmed();
+    if(cleanPath.isEmpty()){
+        setError("Path cannot be empty.");
+        return false;
+    }
+
     if(cleanPath.startsWith("~/")){
         cleanPath.replace(0, 2, QDir::homePath() + "/");
+    }
+
+    QFileInfo fi(cleanPath);
+    QString absPath = fi.canonicalFilePath();
+    if(absPath.isEmpty()){
+        absPath = fi.absoluteFilePath();
+    }
+    QString home = QDir::homePath();
+
+    static const QStringList protectedFiles = {
+        home + "/.bashrc",
+        home + "/.bash_profile",
+        home + "/.profile",
+        home + "/.zshrc",
+        home + "/.bash_logout",
+        home + "/.bash_aliases",
+        home + "/.xinitrc",
+        home + "/.xprofile"
+    };
+
+    if (protectedFiles.contains(absPath) ||
+        absPath.startsWith(home + "/.ssh/") ||
+        absPath.startsWith(home + "/.gnupg/") ||
+        absPath.startsWith(home + "/.config/omarchy/")) {
+        setError("Saving to critical system or credential files is blocked for security.");
+        return false;
     }
 
     if (!secureSaveToPath(cleanPath, m_buffers[index].toUtf8())) {

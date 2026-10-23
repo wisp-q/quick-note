@@ -32,7 +32,7 @@ public:
     Q_INVOKABLE void RunStringInTerminal(const QString &text) const;
 
 signals:
-    void BufferIndexChanged(int newIndex, const QString &newText);
+    void BufferIndexChanged();
     void errorOccurred(const QString &errorMessage);
 
 private slots:

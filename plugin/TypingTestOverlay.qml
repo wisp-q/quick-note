@@ -120,7 +120,6 @@ Rectangle {
         
         if (wpm > bestWpm) {
             bestWpm = wpm
-            if (typeof root !== "undefined") root.bestWpm = wpm
         }
     }
     

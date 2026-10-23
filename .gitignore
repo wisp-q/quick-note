@@ -1,4 +1,5 @@
 build/
+My/
 *.so
 *.o
 project_analysis.md
