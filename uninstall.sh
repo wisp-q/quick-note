@@ -12,8 +12,8 @@ if [ -d "$LOCAL_PLUGIN_DIR" ]; then
     echo "Removing plugin files..."
     rm -rf "$LOCAL_PLUGIN_DIR"
     
-    echo "Restarting Omarchy shell to apply changes..."
-    omarchy restart shell
+    echo "Reloading Omarchy shell plugins..."
+    omarchy-shell shell rescanPlugins 2>/dev/null || true
     
     echo "Bye Bye!"
 else

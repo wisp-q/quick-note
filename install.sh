@@ -21,7 +21,7 @@ rm -f "$LOCAL_PLUGIN_DIR/.repo_path"
 echo "$PWD" > "$LOCAL_PLUGIN_DIR/.repo_path"
 
 rm -rf "$LOCAL_PLUGIN_DIR/plugin"
-cp plugin/*.qml "$LOCAL_PLUGIN_DIR/"
+cp *.qml "$LOCAL_PLUGIN_DIR/"
 sed -i "s|@@PLUGIN_DIR@@|$LOCAL_PLUGIN_DIR|g" "$LOCAL_PLUGIN_DIR"/*.qml
 
 rm -f "$LOCAL_PLUGIN_DIR/manifest.json"
